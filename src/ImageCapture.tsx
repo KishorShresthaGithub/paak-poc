@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-
-const imageList = {
-  aqua: "/assets/aqua.png",
-  rem: "/assets/rem.png",
-};
+import { usePosition } from "./utils/hooks";
 
 const useMouseState = (canvas: HTMLCanvasElement | null) => {
   const [isMouseDown, setMouseDown] = useState(false);
@@ -28,13 +24,9 @@ const ImageCapture = () => {
   //  width and height
   const [cameraDimension, setCameraDimensions] = useState({ w: 1080, h: 720 });
 
-  const [selectedImage, setSelectedImage] = useState("aqua");
-  const [imageScale, setImageScale] = useState(0.4);
 
-  const [imagePos, setImagePos] = useState({ x: 0, y: 0 });
 
-  const imageX = imagePos.x;
-  const imageY = imagePos.y;
+  const { imageX, imageY, moveHorizontal, moveVertical } = usePosition();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -61,7 +53,6 @@ const ImageCapture = () => {
       );
     };
 
-    image.src = imageList[selectedImage as keyof typeof imageList];
 
     requestAnimationFrame(drawImage);
   }, [cameraDimension, imageX, imageY, imageScale, selectedImage]);
@@ -100,53 +91,11 @@ const ImageCapture = () => {
     startCamera();
   }, [drawImage]);
 
-  const onCaptureImage = () => {
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
 
-    if (canvas && video) {
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
 
-      ctx.globalCompositeOperation = "destination-over";
 
-      ctx.drawImage(video, 0, 0, cameraDimension.w, cameraDimension.h);
 
-      const dataUrl = canvas.toDataURL();
-      const link = document.createElement("a");
-      link.download = `${Intl.DateTimeFormat("jp-JP").format(new Date())}`;
-      link.href = dataUrl;
-      link.click();
-
-      // reset image
-      ctx.clearRect(0, 0, cameraDimension.w, cameraDimension.h);
-      drawImage();
-    }
-  };
-
-  const onChangeIllust = (e: any) => {
-    console.log(e);
-
-    const value = e.target.value;
-    setSelectedImage(value);
-  };
-
-  const moveDelta = 50;
   const scaleDelta = 0.1;
-
-  const moveVertical = (up?: boolean) => {
-    setImagePos((s) => {
-      s.x = s.x + (up ? -1 : 1) * moveDelta;
-      return s;
-    });
-  };
-
-  const moveHorizontal = (left?: boolean) => {
-    setImagePos((s) => {
-      s.y = s.y + (left ? -1 : 1) * moveDelta;
-      return s;
-    });
-  };
 
   return (
     <>
@@ -163,36 +112,15 @@ const ImageCapture = () => {
             width={cameraDimension.w}
           ></canvas>
         </div>
-        <button className="white" onClick={onCaptureImage}>
-          <img src="/assets/camera.png" alt="" />
-        </button>
+     
         <div className="direction">
           <button onClick={() => moveVertical(true)}>^</button>
           <button onClick={() => moveVertical()}>v</button>
           <button onClick={() => moveHorizontal(true)}>{"<"}</button>
           <button onClick={() => moveHorizontal()}>{">"}</button>
         </div>
-        <div>
-          <button onClick={() => setImageScale((s) => (s -= scaleDelta))}>
-            -
-          </button>
-          <span style={{ color: "#fff" }}>Zoom</span>
-          <button onClick={() => setImageScale((s) => (s += scaleDelta))}>
-            +
-          </button>
-        </div>
-        <select
-          value={selectedImage}
-          name="illust"
-          id=""
-          onChange={onChangeIllust}
-        >
-          {Object.entries(imageList).map(([key]) => (
-            <option key={Math.random()} value={key}>
-              {key}
-            </option>
-          ))}
-        </select>
+       
+      
       </main>
     </>
   );
