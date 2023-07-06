@@ -31,8 +31,10 @@ const ImageCapture = () => {
   const [selectedImage, setSelectedImage] = useState("aqua");
   const [imageScale, setImageScale] = useState(0.4);
 
-  const [imageX, setImageX] = useState(0);
-  const [imageY, setImageY] = useState(0);
+  const [imagePos, setImagePos] = useState({ x: 0, y: 0 });
+
+  const imageX = imagePos.x;
+  const imageY = imagePos.y;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -133,11 +135,17 @@ const ImageCapture = () => {
   const scaleDelta = 0.1;
 
   const moveVertical = (up?: boolean) => {
-    setImageY((x) => x + (up ? -1 : 1) * moveDelta);
+    setImagePos((s) => {
+      s.x = s.x + (up ? -1 : 1) * moveDelta;
+      return s;
+    });
   };
 
   const moveHorizontal = (left?: boolean) => {
-    setImageX((x) => x + (left ? -1 : 1) * moveDelta);
+    setImagePos((s) => {
+      s.y = s.y + (left ? -1 : 1) * moveDelta;
+      return s;
+    });
   };
 
   return (
