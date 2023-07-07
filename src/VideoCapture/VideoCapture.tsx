@@ -147,8 +147,11 @@ const VideoCapture = () => {
     }
   };
 
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<any[]>([]);
+
   // record video
-  const onRecord = async () => {
+  const onRecord = useCallback(async () => {
     const currentRecordState = !recordStart;
     const canvas = canvasRef.current;
 
@@ -156,35 +159,37 @@ const VideoCapture = () => {
     setRecordStart((s) => !s);
 
     const stream = canvas.captureStream(30);
+    mediaRecorderRef.current =
+      mediaRecorderRef.current || new MediaRecorder(stream);
 
-    if (currentRecordState) {
+    const mediaRecorder = mediaRecorderRef.current;
+
+    mediaRecorder.ondataavailable = (e) => {
+      console.log("pushing chunks");
+      chunksRef.current.push(e.data);
+    };
+    mediaRecorder.onerror = console.log;
+    mediaRecorder.onstop = () => console.log("recording stop");
+
+    if (currentRecordState && mediaRecorder.state !== "recording") {
       //start
-      startRecording(stream)
-        .then((chunks) => {
-          const blob = new Blob(chunks, { type: "video/webm" });
-
-          setRecordStart(false);
-          const url = URL.createObjectURL(blob);
-
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "test.webm";
-          a.click();
-          window.URL.revokeObjectURL(url);
-        })
-        .catch((error) => {
-          if (error.name === "NotFoundError") {
-            console.log("Camera or microphone not found. Can't record.");
-          } else {
-            console.log(error);
-          }
-        });
+      chunksRef.current = [];
+      mediaRecorder.start(200);
     } else {
       // stop
-
+      mediaRecorder.stop();
+      mediaRecorderRef.current = null;
       stop(stream);
+
+      const blob = new Blob(chunksRef.current, { type: "video/webm" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.download = "test.webm";
+      link.href = url;
+      link.click();
     }
-  };
+  }, [recordStart]);
 
   return (
     <main className="container">
@@ -226,7 +231,7 @@ const VideoCapture = () => {
       </div>
 
       <div>
-        <button onClick={onRecord} disabled={recordStart}>
+        <button onClick={onRecord}>
           {recordStart ? "Recording..." : "Record"}
         </button>
       </div>
