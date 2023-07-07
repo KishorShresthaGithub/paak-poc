@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./VideoCapture.scss";
-import { usePosition } from "../utils/hooks";
+import { usePosition, useResponsive } from "../utils/hooks";
 
 const imageList = {
   aqua: "/assets/aqua.png",
@@ -40,17 +40,50 @@ function stop(stream: MediaStream) {
 }
 
 const VideoCapture = () => {
+  const { vw } = useResponsive();
+
   // camera for video and canvas dimension
-  const [cameraDimension] = useState({ w: 1080, h: 720 });
+  const [cameraDimension, setCameraDimension] = useState({
+    w: Math.min(vw, 1080),
+    h: 720,
+  });
   // start recording
   const [recordStart, setRecordStart] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const devices = navigator.mediaDevices;
+      const stream = await devices.getUserMedia({ video: true });
+      const track = stream.getVideoTracks()[0];
+
+      const { width, height } = track.getSettings();
+
+      if (width && height) {
+        const aspectRatio = (width / height).toFixed(2);
+
+        const deviceWidth = Math.min(vw, 1080);
+
+        const deviceHeight =
+          vw > 640
+            ? deviceWidth / Number(aspectRatio)
+            : deviceWidth * Number(aspectRatio);
+
+        setCameraDimension({
+          w: deviceWidth,
+          h: deviceHeight,
+        });
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   //image position
   const { imageX, imageY, moveHorizontal, moveVertical } = usePosition();
   const [selectedImage, setSelectedImage] = useState("aqua");
   const [imageScale, setImageScale] = useState(0.4);
 
-  const scaleDelta = 0.1;
+  const scaleDelta = vw < 640 ? 0.05 : 0.1;
 
   // reference for canvas
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -204,11 +237,15 @@ const VideoCapture = () => {
       ></video> */}
 
       <div className="frame-container">
-        <canvas
-          ref={canvasRef}
-          height={cameraDimension.h}
-          width={cameraDimension.w}
-        ></canvas>
+        {loading ? (
+          "Loading"
+        ) : (
+          <canvas
+            ref={canvasRef}
+            height={cameraDimension.h}
+            width={cameraDimension.w}
+          ></canvas>
+        )}
       </div>
 
       <div className="buttons-container">
