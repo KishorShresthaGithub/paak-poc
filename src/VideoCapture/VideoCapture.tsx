@@ -7,6 +7,8 @@ const imageList = {
   rem: "/assets/rem.png",
 };
 
+/* 
+example
 function startRecording(stream: MediaStream, lengthInMS = 10 * 1000) {
   const recorder = new MediaRecorder(stream);
   const data: any = [];
@@ -32,14 +34,14 @@ function startRecording(stream: MediaStream, lengthInMS = 10 * 1000) {
 
   return Promise.all([stopped, recorded]).then(() => data);
 }
-
+ */
 function stop(stream: MediaStream) {
   stream.getTracks().forEach((track) => track.stop());
 }
 
 const VideoCapture = () => {
   // camera for video and canvas dimension
-  const [cameraDimension, setCameraDimensions] = useState({ w: 1080, h: 720 });
+  const [cameraDimension] = useState({ w: 1080, h: 720 });
   // start recording
   const [recordStart, setRecordStart] = useState(false);
 
@@ -209,31 +211,38 @@ const VideoCapture = () => {
         ></canvas>
       </div>
 
-      <div className="direction">
-        <button onClick={() => moveVertical(true)}>^</button>
-        <button onClick={() => moveVertical()}>v</button>
-        <button onClick={() => moveHorizontal(true)}>{"<"}</button>
-        <button onClick={() => moveHorizontal()}>{">"}</button>
-      </div>
+      <div className="buttons-container">
+        <div className="direction">
+          <button onClick={() => moveVertical(true)}>^</button>
+          <button onClick={() => moveVertical()}>v</button>
+          <button onClick={() => moveHorizontal(true)}>{"<"}</button>
+          <button onClick={() => moveHorizontal()}>{">"}</button>
+        </div>
+        <div className="btn-group">
+          <button className="white" onClick={onCaptureImage}>
+            <img src="/assets/camera.png" alt="" />
+          </button>
 
-      <button className="white" onClick={onCaptureImage}>
-        <img src="/assets/camera.png" alt="" />
-      </button>
+          <button className="white" onClick={onRecord}>
+            {recordStart ? "Recording..." : "Record"}
+          </button>
+        </div>
 
-      <div>
-        <button onClick={() => setImageScale((s) => (s -= scaleDelta))}>
-          -
-        </button>
-        <span style={{ color: "#fff" }}>Zoom</span>
-        <button onClick={() => setImageScale((s) => (s += scaleDelta))}>
-          +
-        </button>
-      </div>
-
-      <div>
-        <button onClick={onRecord}>
-          {recordStart ? "Recording..." : "Record"}
-        </button>
+        <div className="zoom">
+          <button
+            className="white"
+            onClick={() => setImageScale((s) => (s -= scaleDelta))}
+          >
+            -
+          </button>
+          <span style={{ color: "#fff" }}>Zoom</span>
+          <button
+            className="white"
+            onClick={() => setImageScale((s) => (s += scaleDelta))}
+          >
+            +
+          </button>
+        </div>
       </div>
 
       <select

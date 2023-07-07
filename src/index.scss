@@ -26,6 +26,16 @@ video {
   row-gap: 1rem;
 }
 
+.btn-group {
+  display: flex;
+  column-gap: 1rem;
+}
+
+select {
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+}
+
 button {
   padding: 0.5rem 1rem;
   font-family: Helvetica, sans-serif;
@@ -47,7 +57,8 @@ button {
 
   &.white {
     background-color: #acacac;
-    display: block;
+
+    color: #171717;
   }
 
   img {
@@ -57,6 +68,11 @@ button {
     object-fit: contain;
     object-position: center;
   }
+}
+
+.buttons-container {
+  display: flex;
+  column-gap: 1rem;
 }
 
 .camera-container {
@@ -75,4 +91,10 @@ button {
     position: absolute;
     z-index: 20;
   }
+}
+
+.zoom {
+  display: flex;
+  align-items: center;
+  column-gap: 1rem;
 }
