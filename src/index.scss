@@ -61,6 +61,13 @@ button {
     color: #171717;
   }
 
+  &.toggle {
+    img {
+      display: inline-block;
+      margin-left: 0.5rem;
+    }
+  }
+
   img {
     display: block;
     width: 1.4rem;
