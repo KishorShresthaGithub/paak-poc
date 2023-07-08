@@ -85,22 +85,8 @@ button {
   justify-content: center;
 }
 
-.camera-container {
-  position: relative;
-  height: var(--camera-height);
-  width: var(--camera-width);
-
-  border: 1px solid #0f0;
-  video {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 10;
-  }
-  canvas {
-    position: absolute;
-    z-index: 20;
-  }
+.frame-container {
+  padding: 0.5rem;
 }
 
 .zoom {

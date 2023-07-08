@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import "./VideoCapture.scss";
 import { usePosition, useResponsive } from "../utils/hooks";
 
@@ -12,20 +12,20 @@ function stop(stream: MediaStream) {
 }
 
 const VideoCapture = () => {
-  const { vw, vh } = useResponsive();
+  const { w, h, vw } = useResponsive();
 
   // camera for video and canvas dimension
-  const cameraDimension = {
-    w: Math.min(vw, 1080),
-    h: 720,
-  };
+  const [canvasDimension, setCanvasDimension] = useState({
+    w: Math.min(1080, w),
+    h: Math.min(720, h),
+  });
   // start recording
   const [recordStart, setRecordStart] = useState(false);
   // camera environment state
   const [front, setFront] = useState(false);
   // scaling illustration
-  const [imageScale, setImageScale] = useState(vw < 640 ? 0.2 : 0.4);
-  const scaleDelta = vw < 640 ? 0.05 : 0.1;
+  const [imageScale, setImageScale] = useState(w < 640 ? 0.2 : 0.3);
+  const scaleDelta = w < 640 ? 0.05 : 0.1;
 
   //image position
   const { imageX, imageY, moveHorizontal, moveVertical } = usePosition();
@@ -55,28 +55,28 @@ const VideoCapture = () => {
   );
 
   // getting dimensions of stream
-  const getStreamDimension = useCallback(
-    (stream: MediaStream) => {
-      const tracks = stream.getVideoTracks();
-      const settings = tracks[0].getSettings();
+  const getStreamDimension = useCallback((stream: MediaStream) => {
+    const tracks = stream.getVideoTracks();
+    const settings = tracks[0].getSettings();
 
-      const trackHeight = settings.height || cameraDimension.h;
-      const trackWidth = settings.width || cameraDimension.w;
-      return { trackWidth, trackHeight };
-    },
-    [cameraDimension.h, cameraDimension.w]
-  );
+    const trackHeight = settings.height || 0;
+    const trackWidth = settings.width || 0;
+    return { trackWidth, trackHeight };
+  }, []);
+
+  const videoRef = useRef<HTMLVideoElement>();
 
   // play video on canvas
   const playStream = useCallback(
     (stream: MediaStream) => {
-      const video = document.createElement("video");
+      videoRef.current = videoRef.current || document.createElement("video");
+      const video = videoRef.current;
 
       const { trackWidth, trackHeight } = getStreamDimension(stream);
 
       // delta width to center the video in canvas
+
       let dWidth = 0;
-      let dHeight = 0;
 
       video.addEventListener("loadedmetadata", () => {
         const canvas = canvasRef.current;
@@ -86,12 +86,12 @@ const VideoCapture = () => {
         ctx.globalCompositeOperation = "destination-over";
 
         const drawFrame = () => {
-          ctx.clearRect(0, 0, trackWidth, trackHeight);
+          ctx.clearRect(0, 0, canvasDimension.w, canvasDimension.h);
           // draw illustration
           drawIllust(ctx);
           // draw video frame
           // start from difference
-          ctx.drawImage(video, dWidth * -0.5, dHeight * -0.5);
+          ctx.drawImage(video, dWidth * -0.5, 0);
           requestAnimationFrame(drawFrame);
         };
         drawFrame();
@@ -101,16 +101,21 @@ const VideoCapture = () => {
       video.srcObject = stream;
 
       if (canvasRef.current) {
-        // set canvas dimension to that of video
-        // if window size is smaller than the width of the video, use width of the window
-
-        canvasRef.current.height = Math.min(trackHeight, vh * 0.8);
-        canvasRef.current.width = Math.min(trackWidth, vw);
         dWidth = trackWidth - canvasRef.current.width;
-        dHeight = trackHeight - canvasRef.current.height;
+
+        if (trackHeight < canvasDimension.h) {
+          canvasRef.current
+            .getContext("2d")
+            ?.clearRect(0, 0, canvasDimension.w, canvasDimension.h);
+
+          setCanvasDimension((s) => ({
+            ...s,
+            h: trackHeight,
+          }));
+        }
       }
     },
-    [drawIllust, getStreamDimension, vh, vw]
+    [canvasDimension.h, canvasDimension.w, drawIllust, getStreamDimension]
   );
 
   // play the video
@@ -121,20 +126,19 @@ const VideoCapture = () => {
     devices
       .getUserMedia({
         video: {
-          width: cameraDimension.w,
-          height: cameraDimension.h,
+          height: { ideal: 540 },
           facingMode: front ? "user" : "environment",
         },
       })
       .then(playStream);
-  }, [cameraDimension.h, cameraDimension.w, front, playStream]);
+  }, [front, playStream]);
 
   useEffect(() => {
     playVideo();
   }, [playVideo]);
 
   // change illustration
-  const onChangeIllust = (e: any) => {
+  const onChangeIllust = (e: ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setSelectedImage(value);
   };
@@ -156,7 +160,7 @@ const VideoCapture = () => {
   };
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<any[]>([]);
+  const chunksRef = useRef<Blob[]>([]);
 
   // record video
   const onRecord = useCallback(async () => {
@@ -208,7 +212,11 @@ const VideoCapture = () => {
       <h1>Video Capture</h1>
 
       <div className="frame-container">
-        <canvas ref={canvasRef}></canvas>
+        <canvas
+          ref={canvasRef}
+          height={canvasDimension.h}
+          width={canvasDimension.w}
+        ></canvas>
       </div>
 
       <div className="buttons-container">
@@ -243,7 +251,7 @@ const VideoCapture = () => {
             +
           </button>
         </div>
-        {vw < 640 && (
+        {w < 640 && (
           <div>
             <button className="white toggle" onClick={onChangeFront}>
               {front ? "Back" : "Front"} <img src="/assets/camera.png" alt="" />
