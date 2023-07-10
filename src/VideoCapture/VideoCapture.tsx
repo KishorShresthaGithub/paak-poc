@@ -34,36 +34,34 @@ const VideoCapture = () => {
   const [selectedImage, setSelectedImage] = useState("aqua");
 
   // reference for canvas
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
+  const videoCanvasRef = useRef<HTMLCanvasElement>(null);
+  const imageCanvasRef = useRef<HTMLCanvasElement>(null);
+  const recorderCanvasRef = useRef<HTMLCanvasElement>(null);
+  const imageRef = useRef<any>(undefined);
 
   // drawing illustration to canvas
-  const drawIllust = useCallback(
-    (ctx: CanvasRenderingContext2D) => {
-      const image = imageRef.current;
+  const drawIllust = useCallback(() => {
+    const image = imageRef.current || new Image();
+    const canvas = imageCanvasRef.current;
+    const ctx = canvas?.getContext("2d");
 
-      if (!image) return;
+    if (!(image && ctx)) return;
 
-      const drawImage = () => {
-        ctx.drawImage(
-          image,
-          imageX,
-          imageY,
-          image.width * imageScale,
-          image.height * imageScale
-        );
-      };
+    const drawImage = () => {
+      ctx.clearRect(0, 0, canvasDimension.w, canvasDimension.h);
+      ctx.drawImage(
+        image,
+        imageX,
+        imageY,
+        image.width * imageScale,
+        image.height * imageScale
+      );
+    };
 
-      image.src = imageList[selectedImage as keyof typeof imageList];
+    image.onload = drawImage;
 
-      if (image.complete) {
-        drawImage();
-      } else {
-        image.onload = drawImage;
-      }
-    },
-    [imageScale, imageX, imageY, selectedImage]
-  );
+    image.src = imageList[selectedImage as keyof typeof imageList];
+  }, [canvasDimension, imageScale, imageX, imageY, selectedImage]);
 
   // getting dimensions of stream
   const getStreamDimension = useCallback((stream: MediaStream) => {
@@ -82,6 +80,7 @@ const VideoCapture = () => {
   const playStream = useCallback(
     (stream: MediaStream) => {
       const video = videoRef.current;
+
       if (!video) return;
 
       const { trackWidth, trackHeight } = getStreamDimension(stream);
@@ -90,26 +89,35 @@ const VideoCapture = () => {
       let dWidth = 0;
 
       video.addEventListener("loadedmetadata", () => {
-        const canvas = canvasRef.current;
-        const ctx = canvas?.getContext("2d");
-        if (!ctx) return;
+        const videoCanvas = videoCanvasRef.current;
+        const videoCtx = videoCanvas?.getContext("2d");
 
-        ctx.globalCompositeOperation = "destination-over";
+        const recorderCanvas = recorderCanvasRef.current;
+        const recorderCtx = recorderCanvas?.getContext("2d");
+
+        if (!(videoCtx && recorderCtx)) return;
+
+        recorderCtx.globalCompositeOperation = "destination-over";
 
         const isSafari =
           navigator.userAgent.search("Safari") >= 0 &&
           navigator.userAgent.search("Chrome") < 0;
 
-        const drawFrame = () => {
+        const drawFrame = (ctx: CanvasRenderingContext2D) => {
           ctx.clearRect(0, 0, canvasDimension.w, canvasDimension.h);
-          // draw illustration
-          drawIllust(ctx);
+          //draw illustration to recording
+          if (imageCanvasRef.current) {
+            recorderCtx.drawImage(imageCanvasRef.current, 0, 0);
+          }
+
           // draw video frame
           // start from difference
           ctx.drawImage(video, isSafari ? 0 : dWidth * -0.5, 0);
-          requestAnimationFrame(drawFrame);
+
+          requestAnimationFrame(() => drawFrame(ctx));
         };
-        drawFrame();
+        drawFrame(videoCtx);
+        drawFrame(recorderCtx);
       });
 
       video.setAttribute("autoplay", "");
@@ -119,13 +127,11 @@ const VideoCapture = () => {
 
       video.load();
 
-      video.play();
-
-      if (canvasRef.current) {
+      if (videoCanvasRef.current) {
         dWidth = trackWidth - canvasDimension.w;
 
         if (trackHeight < canvasDimension.h) {
-          canvasRef.current
+          videoCanvasRef.current
             .getContext("2d")
             ?.clearRect(0, 0, canvasDimension.w, canvasDimension.h);
 
@@ -136,7 +142,7 @@ const VideoCapture = () => {
         }
       }
     },
-    [canvasDimension.h, canvasDimension.w, drawIllust, getStreamDimension]
+    [canvasDimension.h, canvasDimension.w, getStreamDimension]
   );
 
   // play the video
@@ -155,8 +161,9 @@ const VideoCapture = () => {
   }, [front, playStream]);
 
   useEffect(() => {
+    drawIllust();
     playVideo();
-  }, [playVideo]);
+  }, [drawIllust, playVideo]);
 
   // change illustration
   const onChangeIllust = (e: ChangeEvent<HTMLSelectElement>) => {
@@ -166,13 +173,14 @@ const VideoCapture = () => {
 
   // capture the image
   const onCaptureImage = () => {
-    const canvas = canvasRef.current;
+    const recorderCanvas = recorderCanvasRef.current;
 
-    if (canvas) {
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+    if (recorderCanvas) {
+      const recorderCtx = recorderCanvas.getContext("2d");
 
-      const dataUrl = canvas.toDataURL();
+      if (!recorderCtx) return;
+
+      const dataUrl = recorderCanvas.toDataURL();
       const link = document.createElement("a");
       link.download = `${Intl.DateTimeFormat("jp-JP").format(new Date())}`;
       link.href = dataUrl;
@@ -186,7 +194,7 @@ const VideoCapture = () => {
   // record video
   const onRecord = useCallback(async () => {
     const currentRecordState = !recordStart;
-    const canvas = canvasRef.current;
+    const canvas = recorderCanvasRef.current;
 
     if (!canvas) return;
     setRecordStart((s) => !s);
@@ -232,9 +240,18 @@ const VideoCapture = () => {
     <main className="container">
       <h1>Video Capture</h1>
 
-      <div className="frame-container">
+      <div
+        className="frame-container"
+        style={{ width: canvasDimension.w, height: canvasDimension.h }}
+      >
         <canvas
-          ref={canvasRef}
+          ref={imageCanvasRef}
+          height={canvasDimension.h}
+          width={canvasDimension.w}
+        ></canvas>
+
+        <canvas
+          ref={videoCanvasRef}
           height={canvasDimension.h}
           width={canvasDimension.w}
         ></canvas>
@@ -242,7 +259,12 @@ const VideoCapture = () => {
 
       <div className="hide">
         <video ref={videoRef}></video>
-        <img ref={imageRef} />
+
+        <canvas
+          ref={recorderCanvasRef}
+          height={canvasDimension.h}
+          width={canvasDimension.w}
+        ></canvas>
       </div>
 
       <div className="buttons-container">

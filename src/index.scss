@@ -87,6 +87,17 @@ button {
 
 .frame-container {
   padding: 0.5rem;
+  position: relative;
+  canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    &:first-child {
+      border: 1px solid red;
+      z-index: 3;
+    }
+  }
 }
 
 .hide {
