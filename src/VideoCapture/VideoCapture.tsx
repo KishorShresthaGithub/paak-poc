@@ -14,10 +14,12 @@ function stop(stream: MediaStream) {
 const VideoCapture = () => {
   const { w, h, vw } = useResponsive();
 
+  const videoHeight = 540;
+
   // camera for video and canvas dimension
   const [canvasDimension, setCanvasDimension] = useState({
-    w: Math.min(1080, w),
-    h: Math.min(720, h),
+    w: Math.min(720, w),
+    h: Math.min(540, h),
   });
   // start recording
   const [recordStart, setRecordStart] = useState(false);
@@ -33,15 +35,16 @@ const VideoCapture = () => {
 
   // reference for canvas
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
 
   // drawing illustration to canvas
   const drawIllust = useCallback(
     (ctx: CanvasRenderingContext2D) => {
-      const image = new Image();
+      const image = imageRef.current;
 
-      image.src = imageList[selectedImage as keyof typeof imageList];
+      if (!image) return;
 
-      if (image.complete) {
+      const drawImage = () => {
         ctx.drawImage(
           image,
           imageX,
@@ -49,6 +52,14 @@ const VideoCapture = () => {
           image.width * imageScale,
           image.height * imageScale
         );
+      };
+
+      image.src = imageList[selectedImage as keyof typeof imageList];
+
+      if (image.complete) {
+        drawImage();
+      } else {
+        image.onload = drawImage;
       }
     },
     [imageScale, imageX, imageY, selectedImage]
@@ -61,21 +72,21 @@ const VideoCapture = () => {
 
     const trackHeight = settings.height || 0;
     const trackWidth = settings.width || 0;
+
     return { trackWidth, trackHeight };
   }, []);
 
-  const videoRef = useRef<HTMLVideoElement>();
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   // play video on canvas
   const playStream = useCallback(
     (stream: MediaStream) => {
-      videoRef.current = videoRef.current || document.createElement("video");
       const video = videoRef.current;
+      if (!video) return;
 
       const { trackWidth, trackHeight } = getStreamDimension(stream);
 
       // delta width to center the video in canvas
-
       let dWidth = 0;
 
       video.addEventListener("loadedmetadata", () => {
@@ -85,23 +96,33 @@ const VideoCapture = () => {
 
         ctx.globalCompositeOperation = "destination-over";
 
+        const isSafari =
+          navigator.userAgent.search("Safari") >= 0 &&
+          navigator.userAgent.search("Chrome") < 0;
+
         const drawFrame = () => {
           ctx.clearRect(0, 0, canvasDimension.w, canvasDimension.h);
           // draw illustration
           drawIllust(ctx);
           // draw video frame
           // start from difference
-          ctx.drawImage(video, dWidth * -0.5, 0);
+          ctx.drawImage(video, isSafari ? 0 : dWidth * -0.5, 0);
           requestAnimationFrame(drawFrame);
         };
         drawFrame();
       });
 
-      video.autoplay = true;
+      video.setAttribute("autoplay", "");
+      video.setAttribute("mute", "");
+      video.setAttribute("playsinline", "");
       video.srcObject = stream;
 
+      video.load();
+
+      video.play();
+
       if (canvasRef.current) {
-        dWidth = trackWidth - canvasRef.current.width;
+        dWidth = trackWidth - canvasDimension.w;
 
         if (trackHeight < canvasDimension.h) {
           canvasRef.current
@@ -126,7 +147,7 @@ const VideoCapture = () => {
     devices
       .getUserMedia({
         video: {
-          height: { ideal: 540 },
+          height: videoHeight,
           facingMode: front ? "user" : "environment",
         },
       })
@@ -217,6 +238,11 @@ const VideoCapture = () => {
           height={canvasDimension.h}
           width={canvasDimension.w}
         ></canvas>
+      </div>
+
+      <div className="hide">
+        <video ref={videoRef}></video>
+        <img ref={imageRef} />
       </div>
 
       <div className="buttons-container">
