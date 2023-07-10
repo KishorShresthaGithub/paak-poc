@@ -12,7 +12,7 @@ function stop(stream: MediaStream) {
 }
 
 const VideoCapture = () => {
-  const { w, h, vw } = useResponsive();
+  const { w, h } = useResponsive();
 
   const videoHeight = 540;
 
@@ -83,39 +83,39 @@ const VideoCapture = () => {
 
       if (!video) return;
 
+      // we are using to 2 canvases on for viewing one for recording
+      const videoCanvas = videoCanvasRef.current;
+      const videoCtx = videoCanvas?.getContext("2d");
+      const recorderCanvas = recorderCanvasRef.current;
+      const recorderCtx = recorderCanvas?.getContext("2d");
+
       const { trackWidth, trackHeight } = getStreamDimension(stream);
 
       // delta width to center the video in canvas
       let dWidth = 0;
 
+      if (!(videoCtx && recorderCtx)) return;
+
+      recorderCtx.globalCompositeOperation = "destination-over";
+
+      const isSafari =
+        navigator.userAgent.search("Safari") >= 0 &&
+        navigator.userAgent.search("Chrome") < 0;
+
+      const drawFrame = (ctx: CanvasRenderingContext2D) => {
+        ctx.clearRect(0, 0, canvasDimension.w, canvasDimension.h);
+
+        //draw illustration to recording
+
+        if (imageCanvasRef.current)
+          recorderCtx.drawImage(imageCanvasRef.current, 0, 0);
+
+        ctx.drawImage(video, isSafari ? 0 : dWidth * -0.5, 0);
+
+        requestAnimationFrame(() => drawFrame(ctx));
+      };
+
       video.addEventListener("loadedmetadata", () => {
-        const videoCanvas = videoCanvasRef.current;
-        const videoCtx = videoCanvas?.getContext("2d");
-
-        const recorderCanvas = recorderCanvasRef.current;
-        const recorderCtx = recorderCanvas?.getContext("2d");
-
-        if (!(videoCtx && recorderCtx)) return;
-
-        recorderCtx.globalCompositeOperation = "destination-over";
-
-        const isSafari =
-          navigator.userAgent.search("Safari") >= 0 &&
-          navigator.userAgent.search("Chrome") < 0;
-
-        const drawFrame = (ctx: CanvasRenderingContext2D) => {
-          ctx.clearRect(0, 0, canvasDimension.w, canvasDimension.h);
-          //draw illustration to recording
-          if (imageCanvasRef.current) {
-            recorderCtx.drawImage(imageCanvasRef.current, 0, 0);
-          }
-
-          // draw video frame
-          // start from difference
-          ctx.drawImage(video, isSafari ? 0 : dWidth * -0.5, 0);
-
-          requestAnimationFrame(() => drawFrame(ctx));
-        };
         drawFrame(videoCtx);
         drawFrame(recorderCtx);
       });
