@@ -24,7 +24,7 @@ const VideoCapture = () => {
   // camera environment state
   const [front, setFront] = useState(false);
   // scaling illustration
-  const [imageScale, setImageScale] = useState(0.2);
+  const [imageScale, setImageScale] = useState(w < 640 ? 0.2 : 0.3);
   const scaleDelta = w < 640 ? 0.05 : 0.1;
 
   //image position
@@ -97,25 +97,21 @@ const VideoCapture = () => {
         drawFrame();
       });
 
-      video.setAttribute("autoplay", "");
-      video.setAttribute("mute", "");
-      video.setAttribute("playsinline", "");
+      video.autoplay = true;
       video.srcObject = stream;
-
-      video.play();
 
       if (canvasRef.current) {
         dWidth = trackWidth - canvasRef.current.width;
 
-        if (dWidth !== 0) {
+        if (trackHeight < canvasDimension.h) {
           canvasRef.current
             .getContext("2d")
             ?.clearRect(0, 0, canvasDimension.w, canvasDimension.h);
 
-          setCanvasDimension({
-            w: trackWidth,
+          setCanvasDimension((s) => ({
+            ...s,
             h: trackHeight,
-          });
+          }));
         }
       }
     },
