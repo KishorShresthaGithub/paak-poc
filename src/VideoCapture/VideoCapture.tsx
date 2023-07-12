@@ -5,6 +5,7 @@ import { usePosition, useResponsive } from "../utils/hooks";
 const imageList = {
   aqua: "/assets/aqua.png",
   rem: "/assets/rem.png",
+  dio: "/assets/dio.png",
 };
 
 function stop(stream: MediaStream) {
@@ -96,21 +97,21 @@ const VideoCapture = () => {
 
       if (!(videoCtx && recorderCtx)) return;
 
-      recorderCtx.globalCompositeOperation = "destination-over";
+      // recorderCtx.globalCompositeOperation = "destination-over";
 
       const isSafari =
         navigator.userAgent.search("Safari") >= 0 &&
         navigator.userAgent.search("Chrome") < 0;
 
       const drawFrame = (ctx: CanvasRenderingContext2D) => {
+        // ctx.globalCompositeOperation = "destination-over";
         ctx.clearRect(0, 0, canvasDimension.w, canvasDimension.h);
 
         //draw illustration to recording
+        ctx.drawImage(video, isSafari ? 0 : dWidth * -0.5, 0);
 
         if (imageCanvasRef.current)
           recorderCtx.drawImage(imageCanvasRef.current, 0, 0);
-
-        ctx.drawImage(video, isSafari ? 0 : dWidth * -0.5, 0);
 
         requestAnimationFrame(() => drawFrame(ctx));
       };
@@ -257,9 +258,9 @@ const VideoCapture = () => {
         ></canvas>
       </div>
 
-      <div className="hide">
-        <video ref={videoRef}></video>
+      <video ref={videoRef} className="video-hide"></video>
 
+      <div className="hide">
         <canvas
           ref={recorderCanvasRef}
           height={canvasDimension.h}
