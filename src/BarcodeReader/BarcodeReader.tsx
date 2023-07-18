@@ -88,7 +88,7 @@ const BarcodeReader = () => {
         <video playsInline ref={videoRef}></video>
       </div>
 
-      <div style={{ overflow: "scroll", maxHeight: "200px" }}>
+      <div style={{ overflow: "auto", maxHeight: "300px" }}>
         <pre>{results}</pre>
 
         <br />
