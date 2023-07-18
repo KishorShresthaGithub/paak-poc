@@ -8,19 +8,21 @@ const BarcodeReader = () => {
   const controlRef = useRef<IScannerControls>();
 
   const [results, setResult] = useState<string>();
+  const [jsonResult, setJSONResult] = useState<string>();
 
   const onScanSuccess = (results: any) => {
-    const controls = controlRef.current;
+    // const controls = controlRef.current;
 
     if (results) {
+      setJSONResult(results);
       setResult(`The payload is : ${results.text}`);
     }
   };
-  const onScanFail = (error: any) => {
-    // console.log(error);
-    // setResult({ ...error });
-    // controls.stop();
-  };
+  // const onScanFail = () => {
+  //   // console.log(error);
+  //   // setResult({ ...error });
+  //   // controls.stop();
+  // };
 
   useEffect(() => {
     // load zxing
@@ -31,14 +33,14 @@ const BarcodeReader = () => {
       hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
 
       const reader = new BrowserMultiFormatReader(hints);
-      const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-      const selectedDeviceId = devices[0].deviceId;
+      // const devices = await BrowserMultiFormatReader.listVideoInputDevices();
+      // const selectedDeviceId = devices[0].deviceId;
 
       const previewElement = videoRef.current;
 
       if (!previewElement) return;
 
-      const control = await reader
+      await reader
         .decodeFromVideoDevice(
           undefined,
           previewElement,
@@ -46,7 +48,7 @@ const BarcodeReader = () => {
             controlRef.current = controlRef.current || controls;
 
             if (error) {
-              onScanFail(error);
+              // onScanFail(error);
               return;
             }
             onScanSuccess(results);
@@ -88,6 +90,12 @@ const BarcodeReader = () => {
 
       <div style={{ overflow: "scroll", maxHeight: "200px" }}>
         <pre>{results}</pre>
+
+        <br />
+        <br />
+        <br />
+        <span>JSON Data:</span>
+        <pre>{JSON.stringify(jsonResult, null, 2)}</pre>
       </div>
     </main>
   );
