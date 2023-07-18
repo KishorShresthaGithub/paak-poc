@@ -122,7 +122,6 @@ const VideoCapture = () => {
       });
 
       video.setAttribute("autoplay", "");
-      video.setAttribute("mute", "");
       video.setAttribute("playsinline", "");
       video.srcObject = stream;
 
@@ -157,6 +156,7 @@ const VideoCapture = () => {
           height: videoHeight,
           facingMode: front ? "user" : "environment",
         },
+        audio: true,
       })
       .then(playStream);
   }, [front, playStream]);
@@ -197,12 +197,24 @@ const VideoCapture = () => {
     const currentRecordState = !recordStart;
     const canvas = recorderCanvasRef.current;
 
+    const audioStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+    });
+
+    const audioTrack = audioStream.getAudioTracks()[0];
+
     if (!canvas) return;
     setRecordStart((s) => !s);
 
     const stream = canvas.captureStream(30);
+    stream.addTrack(audioTrack);
+
+    const codec = "video/webm;codecs=vp8,opus";
     mediaRecorderRef.current =
-      mediaRecorderRef.current || new MediaRecorder(stream);
+      mediaRecorderRef.current ||
+      new MediaRecorder(stream, {
+        mimeType: codec,
+      });
 
     const mediaRecorder = mediaRecorderRef.current;
 
@@ -223,11 +235,11 @@ const VideoCapture = () => {
       mediaRecorderRef.current = null;
       stop(stream);
 
-      const blob = new Blob(chunksRef.current, { type: "video/webm" });
+      const blob = new Blob(chunksRef.current, { type: "video/mp4" });
       const url = URL.createObjectURL(blob);
 
       const link = document.createElement("a");
-      link.download = "test.webm";
+      link.download = "test.mp4";
       link.href = url;
       link.click();
     }
@@ -258,7 +270,7 @@ const VideoCapture = () => {
         ></canvas>
       </div>
 
-      <video ref={videoRef} className="video-hide"></video>
+      <video ref={videoRef} muted className="video-hide"></video>
 
       <div className="hide">
         <canvas
