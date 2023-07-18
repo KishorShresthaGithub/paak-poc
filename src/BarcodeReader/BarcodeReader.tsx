@@ -94,7 +94,7 @@ const BarcodeReader = () => {
         <br />
         <br />
         <br />
-        <span>JSON Data:</span>
+        {jsonResult && <span>JSON Data:</span>}
         <pre>{JSON.stringify(jsonResult, null, 2)}</pre>
       </div>
     </main>
