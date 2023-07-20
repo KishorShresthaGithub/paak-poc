@@ -32,17 +32,24 @@ const BarcodeReader = () => {
 
       hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
 
-      const reader = new BrowserMultiFormatReader(hints);
       // const devices = await BrowserMultiFormatReader.listVideoInputDevices();
       // const selectedDeviceId = devices[0].deviceId;
 
       const previewElement = videoRef.current;
 
+      const constraints = {
+        video: true,
+        facingMode: "environment",
+        focusMode: "single-shot",
+      };
+
+      const reader = new BrowserMultiFormatReader(hints);
+
       if (!previewElement) return;
 
       await reader
-        .decodeFromVideoDevice(
-          undefined,
+        .decodeFromConstraints(
+          constraints,
           previewElement,
           (results, error, controls) => {
             controlRef.current = controlRef.current || controls;
@@ -88,7 +95,9 @@ const BarcodeReader = () => {
         <video playsInline ref={videoRef}></video>
       </div>
 
-      <div style={{ overflow: "auto", maxHeight: "300px" }}>
+      <div
+        style={{ overflow: "auto", maxHeight: "500px", marginBottom: "2rem" }}
+      >
         <pre>{results}</pre>
 
         <br />

@@ -116,3 +116,9 @@ button {
   position: absolute;
   overflow: hidden;
 }
+
+.route-link-list {
+  button.active {
+    background: #525252;
+  }
+}

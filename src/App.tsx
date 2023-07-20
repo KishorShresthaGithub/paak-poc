@@ -12,11 +12,22 @@ const App = () => {
 
   const changeScreen = (key: Keys) => () => setScreen(key);
 
+  const isActive = (input: Keys) => screen === input;
   return (
     <>
       <div className="route-link-list">
-        <button onClick={changeScreen("frame")}>Frame</button>
-        <button onClick={changeScreen("scanner")}>Scanner</button>
+        <button
+          className={`${isActive("frame") && "active"}`}
+          onClick={changeScreen("frame")}
+        >
+          Frame
+        </button>
+        <button
+          className={`${isActive("scanner") && "active"}`}
+          onClick={changeScreen("scanner")}
+        >
+          Scanner
+        </button>
       </div>
 
       {routes[screen]}
