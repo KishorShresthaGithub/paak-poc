@@ -37,19 +37,19 @@ const BarcodeReader = () => {
 
       const previewElement = videoRef.current;
 
-      const constraints = {
-        video: true,
-        facingMode: "environment",
-        focusMode: "single-shot",
-      };
+      // const constraints = {
+      //   video: true,
+      //   facingMode: "environment",
+      //   focusMode: "single-shot",
+      // };
 
       const reader = new BrowserMultiFormatReader(hints);
 
       if (!previewElement) return;
 
       await reader
-        .decodeFromConstraints(
-          constraints,
+        .decodeFromVideoDevice(
+          undefined,
           previewElement,
           (results, error, controls) => {
             controlRef.current = controlRef.current || controls;
