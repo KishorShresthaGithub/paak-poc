@@ -14,10 +14,6 @@ body {
 canvas {
   border: 1px solid green;
 }
-video {
-  width: 100%;
-  height: 100%;
-}
 
 .container {
   display: flex;
@@ -88,6 +84,16 @@ button {
 .frame-container {
   padding: 0.5rem;
   position: relative;
+
+  video {
+    object-fit: cover;
+  }
+
+  &.flex {
+    display: flex;
+    justify-content: center;
+    max-width: 100vw;
+  }
   canvas {
     position: absolute;
     top: 0;

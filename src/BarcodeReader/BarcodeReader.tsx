@@ -1,7 +1,9 @@
 import { BrowserMultiFormatReader, IScannerControls } from "@zxing/browser";
 import * as ZXing from "@zxing/library";
 
-import { useRef, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const VIDEO_HEIGHT = 500;
 
 const BarcodeReader = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -18,11 +20,11 @@ const BarcodeReader = () => {
       setResult(`The payload is : ${results.text}`);
     }
   };
-  // const onScanFail = () => {
-  //   // console.log(error);
-  //   // setResult({ ...error });
-  //   // controls.stop();
-  // };
+  const onScanFail = (error: unknown) => {
+    // console.log(error.message);
+    // setResult({ ...error });
+    // controls.stop();
+  };
 
   useEffect(() => {
     // load zxing
@@ -32,30 +34,29 @@ const BarcodeReader = () => {
 
       hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
 
-      // const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-      // const selectedDeviceId = devices[0].deviceId;
-
       const previewElement = videoRef.current;
 
-      // const constraints = {
-      //   video: true,
-      //   facingMode: "environment",
-      //   focusMode: "single-shot",
-      // };
+      const constraints = {
+        video: {
+          height: { ideal: VIDEO_HEIGHT },
+          facingMode: "environment",
+          aspectRatio: 9 / 16,
+        },
+      };
 
       const reader = new BrowserMultiFormatReader(hints);
 
       if (!previewElement) return;
 
       await reader
-        .decodeFromVideoDevice(
-          undefined,
+        .decodeFromConstraints(
+          constraints,
           previewElement,
           (results, error, controls) => {
             controlRef.current = controlRef.current || controls;
 
             if (error) {
-              // onScanFail(error);
+              onScanFail(error);
               return;
             }
             onScanSuccess(results);
@@ -65,7 +66,7 @@ const BarcodeReader = () => {
     })().catch(console.log);
   }, []);
 
-  /*   const playVideo = () => {
+  const playVideo = () => {
     const devices = navigator.mediaDevices.getUserMedia({
       video: { facingMode: "environment" },
     });
@@ -73,25 +74,22 @@ const BarcodeReader = () => {
     devices.then((stream) => {
       if (!videoRef.current) return;
 
-      const settings = stream.getVideoTracks()[0]?.getSettings();
-      const { height, width } = settings;
+      const [_settings] = stream.getVideoTracks();
+      const settings = _settings?.getSettings();
 
-      videoRef.current.height = height || 100;
-      videoRef.current.width = width || 100;
-
-      videoRef.current.srcObject = stream;
+      console.log(settings);
     });
   };
 
   useEffect(() => {
     playVideo();
-  }, []); */
+  }, []);
 
   return (
     <main className="container ">
       <h1>Bar Code / QR code Scanner</h1>
 
-      <div className="frame-container">
+      <div className="frame-container flex" style={{ height: VIDEO_HEIGHT }}>
         <video playsInline ref={videoRef}></video>
       </div>
 
