@@ -1,4 +1,5 @@
 video {
+  max-width: 100%;
 }
 
 .container {
@@ -16,4 +17,10 @@ video {
   canvas {
     // display: none;
   }
+}
+
+.results {
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
 }

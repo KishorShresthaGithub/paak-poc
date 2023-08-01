@@ -2,14 +2,11 @@ import { BrowserMultiFormatReader } from "@zxing/browser";
 import * as ZXing from "@zxing/library";
 import style from "./BarcodeReader.module.scss";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getMaxCameraResolution, getOrientation } from "../utils/helpers";
-
-const MAX_WIDTH = 700;
 
 const BarcodeReader = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameContainerRef = useRef<HTMLDivElement>(null);
 
   const [results, setResult] = useState<string>();
@@ -29,30 +26,24 @@ const BarcodeReader = () => {
     // controls.stop();
   };
 
-  useEffect(() => {
-    // load zxing
-    (async () => {
-      const hints = new Map();
-      const formats = Object.values(ZXing.BarcodeFormat);
+  const readBarcode = useCallback(async (stream: MediaStream) => {
+    const previewElement = videoRef.current;
+    if (!previewElement) return;
 
-      const { height: VIDEO_HEIGHT } = await getMaxCameraResolution();
+    const hints = new Map();
+    const formats = Object.values(ZXing.BarcodeFormat);
 
-      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
 
-      const previewElement = videoRef.current;
+    const reader = new BrowserMultiFormatReader(hints);
 
-      const constraints = {
-        video: {
-          height: { ideal: VIDEO_HEIGHT },
-          facingMode: "environment",
-          aspectRatio: 9 / 16,
-        },
-      };
-
-      const reader = new BrowserMultiFormatReader(hints);
-
-      if (!previewElement) return;
-    })().catch(console.log);
+    await reader.decodeFromStream(stream, undefined, (success, error) => {
+      if (error) {
+        onScanFail(error);
+        return;
+      }
+      onScanSuccess(success);
+    });
   }, []);
 
   const getStream = async () => {
@@ -72,55 +63,19 @@ const BarcodeReader = () => {
     return { stream, aspectRatio };
   };
 
-  const getContainerDimensions = (element: HTMLElement | null) => {
-    return element?.getBoundingClientRect();
-  };
-
   const playVideo = useCallback(async () => {
-    const { stream, aspectRatio } = await getStream();
+    const { stream } = await getStream();
     // video ref
     const preview = videoRef.current;
     if (!(preview && stream)) return;
 
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-
-    if (!ctx || !canvas) return;
-
-    const containerDimensions = getContainerDimensions(
-      frameContainerRef.current
-    );
-    const containerWidth = Math.min(
-      (containerDimensions?.width || 0) - 20,
-      MAX_WIDTH
-    );
-
-    const responsiveWidth = [containerWidth / aspectRatio, containerWidth];
-
-    const [ch, cw] = responsiveWidth;
-
-    [preview.height, preview.width] = responsiveWidth;
-    [canvas.height, canvas.width] = responsiveWidth;
-
-    preview.addEventListener("loadedmetadata", () => {
-      const drawImage = () => {
-        ctx.clearRect(0, 0, cw, ch);
-        ctx.drawImage(preview, 0, 0, cw, ch);
-        requestAnimationFrame(drawImage);
-      };
-
-      drawImage();
-    });
-
     preview.srcObject = stream;
-
-    const [track] = stream.getVideoTracks();
-    console.log(track.getSettings());
+    return stream;
   }, []);
 
   useEffect(() => {
-    playVideo();
-  }, [playVideo]);
+    playVideo().then((stream) => stream && readBarcode(stream));
+  }, [playVideo, readBarcode]);
 
   return (
     <main className={style.container}>
@@ -131,20 +86,18 @@ const BarcodeReader = () => {
         className={`${style["frame-container"]} ${style.flex}`}
       >
         <video playsInline ref={videoRef} autoPlay></video>
-
-        <canvas ref={canvasRef}></canvas>
       </div>
 
-      <div
-        style={{ overflow: "auto", maxHeight: "500px", marginBottom: "2rem" }}
-      >
-        <pre>{results}</pre>
+      <div className={style.results}>
+        <div>
+          <pre>{results}</pre>
 
-        <br />
-        <br />
-        <br />
-        {jsonResult && <span>JSON Data:</span>}
-        <pre>{JSON.stringify(jsonResult, null, 2)}</pre>
+          <br />
+          <br />
+          <br />
+          {jsonResult && <span>JSON Data:</span>}
+          <pre>{JSON.stringify(jsonResult, null, 2)}</pre>
+        </div>
       </div>
     </main>
   );
