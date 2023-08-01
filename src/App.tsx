@@ -20,13 +20,13 @@ const App = () => {
           className={`${isActive("frame") && "active"}`}
           onClick={changeScreen("frame")}
         >
-          Frame
+          Frame (フォートフレーム)
         </button>
         <button
           className={`${isActive("scanner") && "active"}`}
           onClick={changeScreen("scanner")}
         >
-          Scanner
+          Scanner (バーコードリーダー)
         </button>
       </div>
 

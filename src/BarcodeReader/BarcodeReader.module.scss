@@ -1,0 +1,19 @@
+video {
+}
+
+.container {
+  padding: 1rem;
+}
+
+.frame-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  margin-top: 1rem;
+  row-gap: 1rem;
+
+  canvas {
+    // display: none;
+  }
+}
