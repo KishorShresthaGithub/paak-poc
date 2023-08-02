@@ -20,7 +20,8 @@ const BarcodeReader = () => {
       setResult(`The payload is : ${results.text}`);
     }
   };
-  const onScanFail = (error: unknown) => {
+  const onScanFail = (error: any) => {
+    console.log(error.message);
     // console.log(error.message);
     // setResult({ ...error });
     // controls.stop();
