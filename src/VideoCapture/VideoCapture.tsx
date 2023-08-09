@@ -209,7 +209,7 @@ const VideoCapture = () => {
     const stream = canvas.captureStream(30);
     stream.addTrack(audioTrack);
 
-    const codec = "video/webm;codecs=vp8,opus";
+    const codec = "video/webm;codecs=h264,opus";
     mediaRecorderRef.current =
       mediaRecorderRef.current ||
       new MediaRecorder(stream, {
