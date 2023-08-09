@@ -11,6 +11,27 @@ const imageList = {
 function stop(stream: MediaStream) {
   stream.getTracks().forEach((track) => track.stop());
 }
+function getSupportedCodec() {
+  const videoCodecList = ["h264", "vp9", "vp8", "av1"];
+
+  const codecList = videoCodecList.map(
+    (codec) => `video/webm;codecs=${codec},opus`
+  );
+
+  //check if supported
+
+  let supportedCodec = "";
+
+  codecList.every((codec) => {
+    if (MediaRecorder.isTypeSupported(codec)) {
+      supportedCodec = codec;
+      return false;
+    }
+    return true;
+  });
+
+  return supportedCodec;
+}
 
 const VideoCapture = () => {
   const { w, h } = useResponsive();
@@ -209,7 +230,8 @@ const VideoCapture = () => {
     const stream = canvas.captureStream(30);
     stream.addTrack(audioTrack);
 
-    const codec = "video/webm;codecs=h264,opus";
+    const codec = getSupportedCodec();
+
     mediaRecorderRef.current =
       mediaRecorderRef.current ||
       new MediaRecorder(stream, {
@@ -235,8 +257,9 @@ const VideoCapture = () => {
       mediaRecorderRef.current = null;
       stop(stream);
 
-      const blob = new Blob(chunksRef.current, { type: "video/mp4" });
-      const url = URL.createObjectURL(blob);
+      const blob = new Blob(chunksRef.current);
+      const file = new File([blob], "test.mp4", { type: "video/mp4" });
+      const url = URL.createObjectURL(file);
 
       const link = document.createElement("a");
       link.download = "test.mp4";
