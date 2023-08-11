@@ -3,7 +3,6 @@ import * as ZXing from "@zxing/library";
 import style from "./BarcodeReader.module.scss";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getMaxCameraResolution, getOrientation } from "../utils/helpers";
 
 const BarcodeReader = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -27,7 +26,7 @@ const BarcodeReader = () => {
     // controls.stop();
   };
 
-  const readBarcode = useCallback(async (stream: MediaStream) => {
+  const readBarcode = useCallback(async () => {
     const previewElement = videoRef.current;
     if (!previewElement) return;
 
@@ -38,45 +37,22 @@ const BarcodeReader = () => {
 
     const reader = new BrowserMultiFormatReader(hints);
 
-    await reader.decodeFromStream(stream, undefined, (success, error) => {
-      if (error) {
-        onScanFail(error);
-        return;
+    await reader.decodeFromConstraints(
+      { video: { facingMode: "environment" } },
+      previewElement,
+      (success, error) => {
+        if (error) {
+          onScanFail(error);
+          return;
+        }
+        if (success) onScanSuccess(success);
       }
-      onScanSuccess(success);
-    });
-  }, []);
-
-  const getStream = async () => {
-    // get basic stream
-    const { height: _height, aspectRatio } = await getMaxCameraResolution();
-    // get orientation
-    const portrait = getOrientation();
-
-    // new video stream
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: "environment",
-        height: { ideal: _height },
-        aspectRatio: portrait ? 1 / aspectRatio : aspectRatio,
-      },
-    });
-    return { stream, aspectRatio };
-  };
-
-  const playVideo = useCallback(async () => {
-    const { stream } = await getStream();
-    // video ref
-    const preview = videoRef.current;
-    if (!(preview && stream)) return;
-
-    preview.srcObject = stream;
-    return stream;
+    );
   }, []);
 
   useEffect(() => {
-    playVideo().then((stream) => stream && readBarcode(stream));
-  }, [playVideo, readBarcode]);
+    readBarcode();
+  }, [readBarcode]);
 
   return (
     <main className={style.container}>
